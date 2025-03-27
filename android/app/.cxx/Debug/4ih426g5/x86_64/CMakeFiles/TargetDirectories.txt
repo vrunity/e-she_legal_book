@@ -1,0 +1,2 @@
+D:/eshelegalbook/android/app/.cxx/Debug/4ih426g5/x86_64/CMakeFiles/edit_cache.dir
+D:/eshelegalbook/android/app/.cxx/Debug/4ih426g5/x86_64/CMakeFiles/rebuild_cache.dir
