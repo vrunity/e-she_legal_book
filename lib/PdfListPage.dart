@@ -14,6 +14,7 @@ class PdfListPage extends StatefulWidget {
 }
 
 class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStateMixin {
+  List<String> folderNavigationStack = [];
   List<Map<String, dynamic>> allFolders = [];
   Map<String, String> unrestrictedFiles = {
   }; // One unrestricted file per folder
@@ -36,6 +37,21 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
     fetchUserName(); // Fetch user name from SharedPreferences
     fetchFolders();
   }
+  final Map<String, String> folderIcons = {
+    'BOCWR': 'assets/bocwr.png',
+    'DGFASLI': 'assets/dgfasli.png',
+    'Electrical': 'assets/electrical.png',
+    'Environment-TNPCB amendments': 'assets/environment.png',
+    'ESI &PF': 'assets/esi_pf.png',
+    'FIRE': 'assets/fire.png',
+    'Food': 'assets/food.png',
+    'Legal Amendements upto 2024': 'assets/legal2024.png',
+    'Legal Amendements 2025': 'assets/2025.png',
+    'LIFT': 'assets/lift.png',
+    'Others': 'assets/others.png',
+    'PESO': 'assets/peso.png',
+    'The Factory act and rules': 'assets/factory_act.png',
+  };
 
   Future<void> fetchUserName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -139,16 +155,20 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
   }
 
   /// Fetch PDFs inside a selected folder
-  Future<void> fetchFiles(String folderPath) async {
+  Future<void> fetchFiles(String folderPath, {bool isNavigatingForward = true}) async {
     setState(() {
       isLoadingFiles = true;
-      accessibleFile = null; // Reset before fetching
-      currentFolderPath = folderPath; // Update selected folder
+      accessibleFile = null;
+      currentFolderPath = folderPath;
+      allFolderFiles.clear();
+      allFolders.clear();
+
+      if (isNavigatingForward) {
+        folderNavigationStack.add(folderPath);
+      }
     });
 
     try {
-      print("Fetching files from folder: $folderPath"); // Debug print
-
       final response = await http.post(Uri.parse(apiUrl), body: {
         'mode': 'files',
         'folderName': folderPath,
@@ -156,29 +176,43 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print("Files Response: $data"); // Debug print
 
         if (data['status'] == 'success') {
-          setState(() {
-            allFolderFiles = List<String>.from(data['files']);
-            accessibleFile = data['accessibleFile']; // Store first free file
-          });
+          if (data.containsKey('files') && data['files'] is List && data['files'].isNotEmpty) {
+            setState(() {
+              allFolderFiles = List<String>.from(data['files']);
+              accessibleFile = data['accessibleFile'];
+            });
+          } else if (data.containsKey('subFolders') && data['subFolders'] is Map) {
+            final subFoldersMap = data['subFolders'] as Map<String, dynamic>;
+            setState(() {
+              allFolders = subFoldersMap.entries.map((entry) => {
+                'name': entry.value['name'],
+                'path': "${folderPath}/${entry.value['path']}",
+                'url': entry.value['url'],
+              }).toList();
+            });
+          } else {
+            throw Exception("No files or subfolders available.");
+          }
         } else {
-          throw Exception("Failed to load files.");
+          throw Exception(data['error'] ?? "Error from server.");
         }
       } else {
-        throw Exception("Failed to connect to the server.");
+        throw Exception("Server returned status: ${response.statusCode}");
       }
     } catch (e) {
       print("Error in fetchFiles: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error fetching files: $e")));
+        SnackBar(content: Text("Error fetching files: $e")),
+      );
     } finally {
       setState(() {
         isLoadingFiles = false;
       });
     }
   }
+
 
   /// Open PDF file with restrictions
   void openPdf(String pdfUrl, bool isApproved, String freePdf) {
@@ -220,31 +254,52 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
       itemCount: allFolders.length,
       itemBuilder: (context, index) {
         final folder = allFolders[index];
+        final folderName = folder['name'];
+        final iconPath = folderIcons[folderName] ?? 'assets/2025.png';  // fallback icon
 
         return GestureDetector(
-          onTap: () => fetchFiles(folder['path']),
+          onTap: () => fetchFiles(folder['path'], isNavigatingForward: true),
           child: SizedBox(
-            width: 150,  // Set your desired width
-            height: 100, // Set your desired height
+            width: 150,
+            height: 100,
             child: Card(
-              elevation: 6, // Light drop shadow
-              color: Colors.white, // Set box color to white
+              elevation: 6,
+              color: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              shadowColor: Colors.black.withOpacity(0.2), // Subtle shadow
+              shadowColor: Colors.black.withOpacity(0.2),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.folder, size: 50, color: Colors.amber), // Yellow folder icon
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F4F4), // Soft light background
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      iconPath,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                   const SizedBox(height: 10.0),
                   Text(
-                    folder['name'],
+                    folderName,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black, // Black text for better contrast
+                      color: Colors.black,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -257,6 +312,7 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
       },
     );
   }
+
 
 
   Widget buildFileGrid() {
@@ -367,34 +423,42 @@ class _PdfListPageState extends State<PdfListPage> with SingleTickerProviderStat
         ),
       ),
 
-        body: currentFolderPath == null ? buildFolderGrid() : buildFileGrid(),
-      floatingActionButton: currentFolderPath != null
+      body: currentFolderPath == null
+          ? buildFolderGrid()
+          : (allFolderFiles.isNotEmpty ? buildFileGrid() : buildFolderGrid()),
+      floatingActionButton: folderNavigationStack.isNotEmpty
           ? FloatingActionButton(
         onPressed: () {
           setState(() {
-            currentFolderPath = null;
-            allFolderFiles.clear(); // ✅ Ensures previous folder data is cleared
+            folderNavigationStack.removeLast(); // Remove current folder
+
+            if (folderNavigationStack.isNotEmpty) {
+              final previousFolder = folderNavigationStack.last;
+              fetchFiles(previousFolder, isNavigatingForward: false);
+            } else {
+              currentFolderPath = null;
+              allFolderFiles.clear();
+              fetchFolders(); // Go back to root folders
+            }
           });
         },
-        backgroundColor: Colors.transparent, // Transparent to apply gradient
-        elevation: 0, // No shadow
-        shape: const CircleBorder(), // Ensures it's a perfect circle
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        shape: const CircleBorder(),
         child: Container(
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [Color(0xFFFF0000), Color(0xFF710606)], // Smooth red to dark maroon
+              colors: [Color(0xFFFF0000), Color(0xFF710606)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
-          alignment: Alignment.center, // Center the icon
-          padding: const EdgeInsets.all(15), // Proper spacing inside the button
-          child: const Icon(Icons.arrow_back, color: Colors.white, size: 28), // White arrow
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(15),
+          child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
         ),
       )
-
-
           : null,
     );
   }

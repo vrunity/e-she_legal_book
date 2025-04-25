@@ -285,6 +285,202 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       },
     );
   }
+  void showForgotPasswordDialog() {
+    TextEditingController forgotContactController = TextEditingController();
+    TextEditingController newPasswordController = TextEditingController();
+    TextEditingController confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with gradient background, title, and close icon
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF4500), Color(0xFF5B0000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Forgot Password",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                // Dialog body
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Mobile Number Field
+                        TextField(
+                          controller: forgotContactController,
+                          decoration: InputDecoration(
+                            labelText: "Mobile Number",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        SizedBox(height: 12),
+                        // New Password Field
+                        TextField(
+                          controller: newPasswordController,
+                          decoration: InputDecoration(
+                            labelText: "New Password",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          obscureText: true,
+                        ),
+                        SizedBox(height: 12),
+                        // Confirm Password Field
+                        TextField(
+                          controller: confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: "Confirm Password",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          obscureText: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Action buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Cancel button
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          "Cancel",
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                      ),
+                      // Submit button
+                      ElevatedButton(
+                        onPressed: () async {
+                          // Validate input fields
+                          if (forgotContactController.text.trim().isEmpty ||
+                              newPasswordController.text.trim().isEmpty ||
+                              confirmPasswordController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Please fill in all fields")),
+                            );
+                            return;
+                          }
+                          if (newPasswordController.text.trim() !=
+                              confirmPasswordController.text.trim()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Passwords do not match")),
+                            );
+                            return;
+                          }
+                          // Call the forgot password API
+                          try {
+                            var response = await http.post(
+                              Uri.parse('https://esheapp.in/pdf_userapp/forgot_password.php'),
+                              body: {
+                                'contact': forgotContactController.text.trim(),
+                                'newPassword': newPasswordController.text.trim(),
+                                'confirmPassword': confirmPasswordController.text.trim(),
+                              },
+                            );
+                            // Print the server response to the console
+                            print("Server response: ${response.body}");
+
+                            // Clean the response by removing any leading debug text
+                            String jsonResponse = response.body;
+                            if (!jsonResponse.trim().startsWith('{')) {
+                              jsonResponse = jsonResponse.substring(jsonResponse.indexOf('{'));
+                            }
+
+                            var data = json.decode(jsonResponse);
+                            if (data['status'] == 'success') {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Password updated successfully")),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(data['message'])),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("An error occurred. Please try again.")),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          "Submit",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -460,6 +656,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ],
                             ),
                             textAlign: TextAlign.center,
+                          ),
+                        ),
+// Add this widget where appropriate in your login page's build() method
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: showForgotPasswordDialog,
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: Colors.blue, // Customize as needed
+                            ),
                           ),
                         ),
 

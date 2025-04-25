@@ -89,6 +89,7 @@ class _UserListPageState extends State<UserListPage> {
     }
   }
 
+  // Function to remove a user
   Future<void> removeUser(String userId, int index) async {
     try {
       final String apiUrl = "https://esheapp.in/pdf_userapp/remove_user.php";
@@ -129,56 +130,169 @@ class _UserListPageState extends State<UserListPage> {
     }
   }
 
-  // Function to show user details and actions
+  // Function to get user initials from their name for a modern avatar
+  String getUserInitials(String name) {
+    List<String> names = name.split(" ");
+    String initials = "";
+    for (var part in names) {
+      if (part.isNotEmpty) {
+        initials += part[0].toUpperCase();
+      }
+    }
+    return initials;
+  }
+
+  // Function to show user details and actions in a modern-styled dialog
   void showUserDetails(Map<String, dynamic> user, int index) {
     final int isApproved = int.parse(user['isApproved'].toString());
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(user['name']),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Contact: ${user['contact']}"),
-            Text("Status: ${isApproved == 1 ? 'Approved' : 'Not Approved'}"),
-          ],
-        ),
-        actions: [
-          if (isApproved == 0)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                updateApprovalStatus(user['id'], 1, index);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: Text("Approve"),
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 10),
+                )
+              ],
             ),
-          if (isApproved == 1)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                updateApprovalStatus(user['id'], 0, index);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: Text("Unapprove"),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with gradient background, icon, and close icon at the right corner
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF4500), Color(0xFF5B0000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left side: Icon + Name
+                      Row(
+                        children: [
+                          Icon(Icons.person, color: Colors.white),
+                          SizedBox(width: 10),
+                          Text(
+                            user['name'],
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Right side: Close icon
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content displaying contact and approval status (left-aligned)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Contact: ${user['contact']}",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Status: ${isApproved == 1 ? 'Approved' : 'Not Approved'}",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action buttons row with white theme and differentiated border colors
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      if (isApproved == 0)
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            updateApprovalStatus(user['id'], 1, index);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            side: BorderSide(color: Colors.green.shade400, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text("Approve"),
+                        ),
+                      if (isApproved == 1)
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            updateApprovalStatus(user['id'], 0, index);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            side: BorderSide(color: Colors.amber.shade400, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text("Unapprove"),
+                        ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          removeUser(user['id'], index);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: BorderSide(color: Colors.red.shade400, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text("Remove"),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Extra bottom spacing
+                SizedBox(height: 16),
+              ],
             ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              removeUser(user['id'], index);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text("Remove"),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text("Close"),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+
 
   // Function to logout the user
   Future<void> logout() async {
@@ -196,6 +310,7 @@ class _UserListPageState extends State<UserListPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text("Confirm Logout"),
           content: Text("Are you sure you want to log out?"),
           actions: [
@@ -219,17 +334,40 @@ class _UserListPageState extends State<UserListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("User List"),
-        centerTitle: true,
-        backgroundColor: Color(0xFF56ab2f),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: showLogoutDialog,
+      backgroundColor: Colors.grey[100],
+        appBar: AppBar(
+          title: Text(
+            "User List",
+            style: TextStyle(color: Colors.white),
           ),
-        ],
-      ),
+          centerTitle: true,
+          elevation: 4,
+          // Using a gradient background for a modern look
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFFF4500), Color(0xFF5B0000)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.refresh, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  isLoading = true;
+                });
+                fetchUserList();
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.logout, color: Colors.white),
+              onPressed: showLogoutDialog,
+            ),
+          ],
+        ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : users.isEmpty
@@ -240,28 +378,55 @@ class _UserListPageState extends State<UserListPage> {
         ),
       )
           : ListView.builder(
+        padding: EdgeInsets.all(16),
         itemCount: users.length,
         itemBuilder: (context, index) {
           final user = users[index];
           final int isApproved = int.parse(user['isApproved'].toString());
-          return Card(
-            color: isApproved == 1
-                ? Colors.green.shade50
-                : Colors.orange.shade50,
-            elevation: 4,
-            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isApproved == 1 ? Colors.green : Colors.orange,
-                child: Icon(Icons.person, color: Colors.white),
+          return GestureDetector(
+            onTap: () => showUserDetails(user, index),
+            child: Container(
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+                border: Border.all(
+                  color: isApproved == 1 ? Colors.greenAccent : Colors.orangeAccent,
+                  width: 1,
+                ),
               ),
-              title: Text(
-                user['name'],
-                style: TextStyle(fontWeight: FontWeight.bold),
+              child: ListTile(
+                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                leading: CircleAvatar(
+                  backgroundColor: isApproved == 1 ? Colors.green : Colors.orange,
+                  child: Text(
+                    getUserInitials(user['name']),
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                title: Text(
+                  user['name'],
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    "Contact: ${user['contact']}",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+                trailing: Icon(Icons.arrow_forward_ios, size: 16),
               ),
-              subtitle: Text("Contact: ${user['contact']}"),
-              trailing: Icon(Icons.arrow_forward_ios),
-              onTap: () => showUserDetails(user, index),
             ),
           );
         },

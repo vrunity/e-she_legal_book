@@ -38,7 +38,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  flutter_launcher_icons: ^0.10.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
@@ -46,6 +46,19 @@ flutter:
   # Assets (Images & Fonts)
   assets:
     - assets/Seed.png
+    - assets/bocwr.png
+    - assets/dgfasli.png
+    - assets/electrical.png
+    - assets/environment.png
+    - assets/esi_pf.png
+    - assets/fire.png
+    - assets/food.png
+    - assets/legal2024.png
+    - assets/2025.png
+    - assets/lift.png
+    - assets/others.png
+    - assets/peso.png
+    - assets/factory_act.png
     - assets/fonts/aAtomicMd.ttf  # Corrected indentation
     - assets/fonts/Typo.otf
 
@@ -58,13 +71,12 @@ flutter:
     - family: Typo
       fonts:
         - asset: assets/fonts/Typo.otf
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/Seed.png"
+  image_path: "assets/legal_icon.png"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/Seed.png"
-
+  adaptive_icon_foreground: "assets/legal_icon.png"
 platforms:
   android:
   ios:
